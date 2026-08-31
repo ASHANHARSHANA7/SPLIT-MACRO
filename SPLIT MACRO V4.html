@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split & Inventory Macro Tool</title>
+    <!-- SheetJS for Excel Reading/Writing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-panel: #eff6ff;
+            --border-color: #bfdbfe;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --primary-blue: #1e40af;
+            --secondary-blue: #2563eb;
+            --white: #ffffff;
+            --success-green: #15803d;
+            --table-header-bg: #eff6ff;
+            --table-row-hover: #f1f5f9;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-panel: #334155;
+            --border-color: #475569;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --primary-blue: #60a5fa;
+            --secondary-blue: #3b82f6;
+            --white: #1e293b;
+            --success-green: #22c55e;
+            --table-header-bg: #334155;
+            --table-row-hover: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: var(--primary-blue);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-blue);
+            border: 1px solid var(--primary-blue);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--bg-panel);
+        }
+
+        .btn-theme {
+            background-color: var(--bg-panel);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-theme:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-blue);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success {
+            background-color: var(--success-green);
+            color: #ffffff;
+        }
+
+        .btn-danger {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-panel);
+            padding: 20px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--primary-blue);
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-main);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--secondary-blue);
+            color: #ffffff;
+            border-color: var(--secondary-blue);
+        }
+
+        .input-panel {
+            display: none;
+        }
+
+        .input-panel.active {
+            display: block;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            background: var(--bg-card);
+            padding: 24px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        .drop-zone:hover {
+            border-color: var(--secondary-blue);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            background: var(--bg-card);
+            color: var(--text-main);
+        }
+
+        .status {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--success-green);
+            font-weight: 600;
+            display: none;
+        }
+
+        .macro-controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .macro-controls .btn {
+            min-width: 120px;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--table-header-bg);
+            color: var(--primary-blue);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover td {
+            background-color: var(--table-row-hover);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Split & Inventory Macro Tool</h1>
+        <div class="btn-group">
+            <button class="btn btn-theme" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+            <button class="btn btn-outline" onclick="downloadTemplate('SPLIT')">📥 SPLIT Template</button>
+            <button class="btn btn-outline" onclick="downloadTemplate('INVENTORY')">📥 INVENTORY Template</button>
+        </div>
+    </div>
+
+    <!-- Inputs Section -->
+    <div class="grid-2">
+        <!-- SPLIT Sheet Panel -->
+        <div class="card">
+            <h3>SPLIT Sheet Data</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('split', 'upload', event)">Upload File</button>
+                <button class="tab-btn" onclick="switchTab('split', 'paste', event)">Paste Data</button>
+            </div>
+
+            <div id="split-upload" class="input-panel active">
+                <div class="drop-zone" onclick="document.getElementById('splitFileInput').click()">
+                    Click or drag Excel/CSV for <strong>SPLIT</strong>
+                    <input type="file" id="splitFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleFileUpload('split', event)">
+                </div>
+            </div>
+
+            <div id="split-paste" class="input-panel">
+                <textarea id="splitPasteInput" placeholder="Paste tab-separated SPLIT data here..."></textarea>
+                <button class="btn btn-primary" style="margin-top:6px; width:100%;" onclick="handlePasteData('split')">Load SPLIT Data</button>
+            </div>
+            <div id="splitStatus" class="status">✓ Loaded (<span id="splitCount">0</span> rows)</div>
+        </div>
+
+        <!-- INVENTORY Sheet Panel -->
+        <div class="card">
+            <h3>INVENTORY Sheet Data</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('inventory', 'upload', event)">Upload File</button>
+                <button class="tab-btn" onclick="switchTab('inventory', 'paste', event)">Paste Data</button>
+            </div>
+
+            <div id="inventory-upload" class="input-panel active">
+                <div class="drop-zone" onclick="document.getElementById('inventoryFileInput').click()">
+                    Click or drag Excel/CSV for <strong>INVENTORY</strong>
+                    <input type="file" id="inventoryFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleFileUpload('inventory', event)">
+                </div>
+            </div>
+
+            <div id="inventory-paste" class="input-panel">
+                <textarea id="inventoryPasteInput" placeholder="Paste tab-separated INVENTORY data here..."></textarea>
+                <button class="btn btn-primary" style="margin-top:6px; width:100%;" onclick="handlePasteData('inventory')">Load INVENTORY Data</button>
+            </div>
+            <div id="inventoryStatus" class="status">✓ Loaded (<span id="inventoryCount">0</span> rows)</div>
+        </div>
+    </div>
+
+    <!-- Macro Controls -->
+    <div class="macro-controls">
+        <button class="btn btn-primary" onclick="runStep01()">STEP 01</button>
+        <button class="btn btn-primary" onclick="runStep02()">STEP 02</button>
+        <button class="btn btn-danger" onclick="clearAllData()">CLEAR</button>
+    </div>
+
+    <!-- Display Panel -->
+    <div id="outputSection" style="display:none;">
+        <div class="section-title">
+            <h2 id="outputTitle">Processed Macro Output</h2>
+            <div class="btn-group" id="downloadActions"></div>
+        </div>
+
+        <div class="table-container">
+            <table id="previewTable">
+                <thead><tr id="tableHeader"></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let splitData = [];
+    let inventoryData = [];
+    let step01Results = [];
+    let step02Results = [];
+
+    const DATE_DEFAULT = "01/01/1900";
+
+    const TRANSFER_SHEET_HEADERS = [
+        "SKUCode", "UOM", "FromPLNo", "FromCaseNo", "FromCartonNo", "FromLotNo", 
+        "FromProdStat", "FromLocation", "FromMftdDate", "FromExpireDate", 
+        "ToPLNo", "ToCaseNo", "ToCartonNo", "ToLotNo", "ToProdStat", 
+        "ToLocation", "ToMftdDate", "ToExpireDate", "TrnsQty", "Remarks", 
+        "FromLPNumber", "PackageCode/Type"
+    ];
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const themeBtn = document.getElementById('themeToggleBtn');
+        
+        if (currentTheme === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            themeBtn.innerHTML = '🌙 Dark Mode';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeBtn.innerHTML = '☀️ Light Mode';
+        }
+    }
+
+    function normalizeKey(val) {
+        return String(val || '').trim().toUpperCase();
+    }
+
+    function downloadTemplate(type) {
+        let headers = [];
+        let rows = [];
+
+        if (type === 'SPLIT') {
+            headers = ["SKU", "LABLE ID", "CARTON", "CASE", "LOT", "QTY"];
+            rows = [
+                ["LOGOFA26FB60005-20260513", "BEEK-4206859", "1", "CR42560", "2605130724", 96.02],
+                ["LOGOFA26FB60005-20260513", "BEEK-4499285", "1-1", "CR42560", "2605130724", 75.00],
+                ["LOGOFA26FB60005-20260513", "BEEK-4499286", "1-2", "CR42560", "2605130724", 21.02]
+            ];
+        } else {
+            headers = ["LOCATION", "SKU", "UOM", "LABLE ID", "CARTON", "CASE", "LOT", "QTY"];
+            rows = [
+                ["STAGING", "LOGOFA26FB60005-20260513", "YRD", "BEEK-4206859", "1", "CR42560", "2605130724", 96.02]
+            ];
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, type);
+        XLSX.writeFile(wb, `${type}_Template.xlsx`);
+    }
+
+    function switchTab(section, mode, evt) {
+        const card = document.querySelector(`#${section}-upload`).parentElement;
+        card.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        card.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+
+        evt.target.classList.add('active');
+        document.getElementById(`${section}-${mode}`).classList.add('active');
+    }
+
+    function sanitizeRowKeys(row) {
+        const clean = {};
+        Object.keys(row).forEach(k => {
+            clean[k.trim().toUpperCase()] = row[k];
+        });
+        return clean;
+    }
+
+    function handleFileUpload(section, event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const buffer = new Uint8Array(e.target.result);
+            const wb = XLSX.read(buffer, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+            const sanitized = json.map(sanitizeRowKeys);
+
+            if (section === 'split') splitData = sanitized;
+            else inventoryData = sanitized;
+
+            updateStatus(section, sanitized.length);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function handlePasteData(section) {
+        const text = document.getElementById(`${section}PasteInput`).value.trim();
+        if (!text) return alert("Please paste valid tabular data.");
+
+        const lines = text.split('\n');
+        if (lines.length < 2) return alert("Data must include headers and at least 1 row.");
+
+        const delimiter = text.includes('\t') ? '\t' : ',';
+        const rawHeaders = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+
+        const parsed = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const vals = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+            let row = {};
+            rawHeaders.forEach((h, idx) => {
+                const cleanKey = h.trim().toUpperCase();
+                row[cleanKey] = vals[idx] !== undefined ? vals[idx] : "";
+            });
+            parsed.push(row);
+        }
+
+        if (section === 'split') splitData = parsed;
+        else inventoryData = parsed;
+
+        updateStatus(section, parsed.length);
+    }
+
+    function updateStatus(section, count) {
+        document.getElementById(`${section}Status`).style.display = 'block';
+        document.getElementById(`${section}Count`).textContent = count;
+    }
+
+    function getParentIdentifier(val) {
+        val = String(val || '').trim();
+        if (!val.includes('-')) return null;
+        const lastDash = val.lastIndexOf('-');
+        return val.substring(0, lastDash).trim();
+    }
+
+    function getValue(row, keyNames) {
+        for (let k of keyNames) {
+            if (row[k] !== undefined && row[k] !== "") return String(row[k]).trim();
+        }
+        return "";
+    }
+
+    function runStep01() {
+        if (splitData.length === 0) return alert("Please load SPLIT data first.");
+
+        const parentSet = new Set();
+        const parentMapByCarton = {};
+        const parentMapByCase = {};
+
+        splitData.forEach(row => {
+            const cartonVal = getValue(row, ["CARTON"]);
+            const caseVal = getValue(row, ["CASE"]);
+            const cParent = getParentIdentifier(cartonVal);
+            const csParent = getParentIdentifier(caseVal);
+            
+            if (cParent) parentSet.add(`CARTON:${cParent}`);
+            if (csParent) parentSet.add(`CASE:${csParent}`);
+        });
+
+        splitData.forEach(row => {
+            const skuVal = normalizeKey(getValue(row, ["SKU", "SKUCODE"]));
+            const cartonVal = getValue(row, ["CARTON"]);
+            const caseVal = getValue(row, ["CASE"]);
+
+            if (cartonVal && parentSet.has(`CARTON:${cartonVal}`)) {
+                parentMapByCarton[`${skuVal}|${cartonVal}`] = row;
+            }
+            if (caseVal && parentSet.has(`CASE:${caseVal}`)) {
+                parentMapByCase[`${skuVal}|${caseVal}`] = row;
+            }
+        });
+
+        const childSplitRows = splitData.filter(row => {
+            const cartonVal = getValue(row, ["CARTON"]);
+            const caseVal = getValue(row, ["CASE"]);
+
+            if (cartonVal && parentSet.has(`CARTON:${cartonVal}`)) return false;
+            if (caseVal && parentSet.has(`CASE:${caseVal}`)) return false;
+
+            return true;
+        });
+
+        const invBySkuLabel = {};
+        const invBySkuCarton = {};
+        const invBySkuCase = {};
+        const invBySkuOnly = {};
+
+        inventoryData.forEach(invRow => {
+            const skuKey = normalizeKey(getValue(invRow, ["SKU", "SKUCODE"]));
+            const labelKey = normalizeKey(getValue(invRow, ["LABLE ID", "LABEL ID", "LABLEID", "LABELID"]));
+            const cartonKey = normalizeKey(getValue(invRow, ["CARTON"]));
+            const caseKey = normalizeKey(getValue(invRow, ["CASE"]));
+
+            if (skuKey && labelKey) invBySkuLabel[`${skuKey}|${labelKey}`] = invRow;
+            if (skuKey && cartonKey) invBySkuCarton[`${skuKey}|${cartonKey}`] = invRow;
+            if (skuKey && caseKey) invBySkuCase[`${skuKey}|${caseKey}`] = invRow;
+            if (skuKey && !invBySkuOnly[skuKey]) invBySkuOnly[skuKey] = invRow;
+        });
+
+        step01Results = childSplitRows.map(sRow => {
+            const skuVal = getValue(sRow, ["SKU", "SKUCODE"]);
+            const skuKey = normalizeKey(skuVal);
+            const cartonVal = getValue(sRow, ["CARTON"]);
+            const caseVal = getValue(sRow, ["CASE"]);
+
+            const cParent = getParentIdentifier(cartonVal) || cartonVal;
+            const csParent = getParentIdentifier(caseVal) || caseVal;
+
+            const splitParentRow = parentMapByCarton[`${skuKey}|${cParent}`] || parentMapByCase[`${skuKey}|${csParent}`];
+            const parentLabelId = splitParentRow ? getValue(splitParentRow, ["LABLE ID", "LABEL ID"]) : "";
+
+            let invMatch = null;
+            if (skuKey && parentLabelId) {
+                invMatch = invBySkuLabel[`${skuKey}|${normalizeKey(parentLabelId)}`];
+            }
+            if (!invMatch && skuKey && cParent) {
+                invMatch = invBySkuCarton[`${skuKey}|${normalizeKey(cParent)}`];
+            }
+            if (!invMatch && skuKey && csParent) {
+                invMatch = invBySkuCase[`${skuKey}|${normalizeKey(csParent)}`];
+            }
+            if (!invMatch && skuKey) {
+                invMatch = invBySkuOnly[skuKey];
+            }
+
+            invMatch = invMatch || {};
+
+            return {
+                "LOCATION": getValue(invMatch, ["LOCATION"]) || "STAGING",
+                "SKU": skuVal,
+                "UOM": getValue(invMatch, ["UOM"]) || "YRD",
+                "LABLE ID": getValue(sRow, ["LABLE ID", "LABEL ID"]),
+                "CARTON": cartonVal,
+                "CASE": caseVal,
+                "LOT": getValue(sRow, ["LOT"]),
+                "QTY": parseFloat(getValue(sRow, ["QTY"]) || 0),
+                "_parentInv": invMatch,
+                "_parentSplitRow": splitParentRow || {}
+            };
+        });
+
+        renderOutputTable("STEP 01 Output (Matched Inventory Data)", step01Results, ["LOCATION", "SKU", "UOM", "LABLE ID", "CARTON", "CASE", "LOT", "QTY"]);
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn btn-success';
+        downloadBtn.textContent = '📥 Download STEP 01 Excel';
+        downloadBtn.onclick = () => exportToExcel(step01Results, "MACRO_STEP_01", ["LOCATION", "SKU", "UOM", "LABLE ID", "CARTON", "CASE", "LOT", "QTY"]);
+
+        const actions = document.getElementById('downloadActions');
+        actions.innerHTML = '';
+        actions.appendChild(downloadBtn);
+    }
+
+    function runStep02() {
+        if (step01Results.length === 0) {
+            runStep01();
+            if (step01Results.length === 0) return;
+        }
+
+        step02Results = step01Results.map(r => {
+            const parentInv = r["_parentInv"] || {};
+            const parentSplit = r["_parentSplitRow"] || {};
+
+            const fromPlNo = getValue(parentInv, ["LABLE ID", "LABEL ID"]) || getValue(parentSplit, ["LABLE ID", "LABEL ID"]) || "";
+            const fromCaseNo = getValue(parentInv, ["CASE"]) || getValue(parentSplit, ["CASE"]) || "";
+            const fromCartonNo = getValue(parentInv, ["CARTON"]) || getValue(parentSplit, ["CARTON"]) || "";
+
+            const toPlNo = r["LABLE ID"] || "";
+            const toCaseNo = r["CASE"] || "";
+            const toCartonNo = r["CARTON"] || "";
+
+            const lotNo = r["LOT"] || getValue(parentInv, ["LOT"]) || "";
+            const location = r["LOCATION"] || "STAGING";
+            const qty = parseFloat(r["QTY"] || 0);
+
+            return {
+                "SKUCode": r["SKU"] || "",
+                "UOM": r["UOM"] || "YRD",
+                "FromPLNo": fromPlNo,
+                "FromCaseNo": fromCaseNo,
+                "FromCartonNo": fromCartonNo,
+                "FromLotNo": lotNo,
+                "FromProdStat": "AP",
+                "FromLocation": location,
+                "FromMftdDate": DATE_DEFAULT,
+                "FromExpireDate": DATE_DEFAULT,
+                "ToPLNo": toPlNo,
+                "ToCaseNo": toCaseNo,
+                "ToCartonNo": toCartonNo,
+                "ToLotNo": lotNo,
+                "ToProdStat": "AP",
+                "ToLocation": location,
+                "ToMftdDate": DATE_DEFAULT,
+                "ToExpireDate": DATE_DEFAULT,
+                "TrnsQty": qty,
+                "Remarks": "",
+                "FromLPNumber": "",
+                "PackageCode/Type": ""
+            };
+        });
+
+        renderOutputTable("STEP 02 Output (Location Transfer Sheet)", step02Results, TRANSFER_SHEET_HEADERS);
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn btn-success';
+        downloadBtn.textContent = '📥 Download Location Transfer Excel';
+        downloadBtn.onclick = () => exportToExcel(step02Results, "Location_Transfer_Sheet", TRANSFER_SHEET_HEADERS);
+
+        const actions = document.getElementById('downloadActions');
+        actions.innerHTML = '';
+        actions.appendChild(downloadBtn);
+    }
+
+    function renderOutputTable(title, rows, headers) {
+        document.getElementById('outputTitle').textContent = title;
+        const thead = document.getElementById('tableHeader');
+        const tbody = document.getElementById('tableBody');
+
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            thead.appendChild(th);
+        });
+
+        rows.forEach(r => {
+            const tr = document.createElement('tr');
+            headers.forEach(h => {
+                const td = document.createElement('td');
+                td.textContent = r[h] !== undefined ? r[h] : "";
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('outputSection').style.display = 'block';
+    }
+
+    function clearAllData() {
+        splitData = [];
+        inventoryData = [];
+        step01Results = [];
+        step02Results = [];
+
+        document.getElementById('splitStatus').style.display = 'none';
+        document.getElementById('inventoryStatus').style.display = 'none';
+        document.getElementById('splitPasteInput').value = '';
+        document.getElementById('inventoryPasteInput').value = '';
+        document.getElementById('splitFileInput').value = '';
+        document.getElementById('inventoryFileInput').value = '';
+        document.getElementById('outputSection').style.display = 'none';
+    }
+
+    function exportToExcel(data, fileName, headers) {
+        const ws = XLSX.utils.json_to_sheet(data, { header: headers, cellDates: false });
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: R };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (ws[cell_ref] && typeof ws[cell_ref].v === 'string' && ws[cell_ref].v.includes('/1900')) {
+                    ws[cell_ref].t = 's';
+                }
+            }
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        XLSX.writeFile(wb, `${fileName}.xlsx`);
+    }
+</script>
+
+</body>
+</html>
